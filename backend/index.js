@@ -1,11 +1,16 @@
+// Create some code to make the right image format from req.body.cover
+
+import bodyParser from "body-parser";
 import cors from "cors";
 import express from "express";
+import multer from "multer";
 import mysql from "mysql";
+import path from "path";
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-
+app.use(bodyParser.json());
 const PORT = 8800;
 
 const db = mysql.createConnection({
@@ -14,6 +19,21 @@ const db = mysql.createConnection({
   password: "62331430",
   database: "test",
 });
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "upload");
+  },
+
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      file.originalname + "_" + Date.now() + path.extname(file.originalname)
+    );
+  },
+});
+
+const upload = multer({ storage: storage });
 
 db.connect((err) => {
   if (err) {
@@ -47,7 +67,50 @@ app.post("/books", (req, res) => {
     req.body.price,
     req.body.cover,
   ];
+
+  console.log(req.body.cover);
+  console.log(req.body);
+
   db.query(q, [values], (err, data) => {
+    if (err) {
+      console.log(err);
+      res.json(err); // return error to frontend
+    } else {
+      return res.json(data); // return result to frontend
+    }
+  });
+});
+
+app.post("/upload", upload.single("image"), (req, res) => {
+  console.log(req.file);
+});
+
+app.put("/books/:id", (req, res) => {
+  const q =
+    "UPDATE books SET `title`= ?, `desc`= ?, `price`= ?, `cover`= ? WHERE id = ?";
+  const id = req.params.id;
+
+  const values = [
+    req.body.title,
+    req.body.desc,
+    req.body.price,
+    req.body.cover,
+  ];
+
+  db.query(q, [...values, id], (err, data) => {
+    if (err) {
+      console.log(err);
+      res.json(err); // return error to frontend
+    } else {
+      return res.json(data); // return result to frontend
+    }
+  });
+});
+
+app.delete("/books/:id", (req, res) => {
+  const q = "DELETE FROM books WHERE id = ?";
+  const id = req.params.id;
+  db.query(q, [id], (err, data) => {
     if (err) {
       console.log(err);
       res.json(err); // return error to frontend
