@@ -11,6 +11,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static("uploads"));
+
 const PORT = 8800;
 
 const db = mysql.createConnection({
@@ -22,7 +24,7 @@ const db = mysql.createConnection({
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "upload");
+    cb(null, "uploads");
   },
 
   filename: function (req, file, cb) {
@@ -45,6 +47,10 @@ db.connect((err) => {
 
 app.get("/", (req, res) => {
   res.json("Hello this is database");
+});
+
+app.get("/uploads", (req, res) => {
+  res.render("uploads");
 });
 
 app.get("/books", (req, res) => {
@@ -81,8 +87,10 @@ app.post("/books", (req, res) => {
   });
 });
 
-app.post("/upload", upload.single("image"), (req, res) => {
+app.post("/uploads", upload.single("image"), (req, res) => {
   console.log(req.file);
+
+  res.json({ message: "Upload feito com sucesso!" });
 });
 
 app.put("/books/:id", (req, res) => {
